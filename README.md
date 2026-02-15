@@ -36,18 +36,41 @@ A modern, SEO-optimized news and articles platform built with Next.js 14, featur
 
 - **Framework**: Next.js 14 with App Router
 - **Language**: TypeScript
-- **Database**: SQLite with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM
 - **Styling**: Tailwind CSS
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
+- **Deployment**: Docker & Docker Compose
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
 - npm or yarn
+- Docker & Docker Compose (for database)
 
-### Installation
+### Quick Start (Recommended)
+
+The easiest way to get started is using the setup script:
+
+```bash
+# Clone the repository
+git clone <repo-url>
+cd foodkeys-weblog-react
+
+# Copy environment file
+cp .env.development .env
+
+# Run setup (installs deps, starts DB, generates client, seeds data)
+npm run setup
+
+# Start development server
+npm run dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000)
+
+### Manual Installation
 
 1. Clone the repository:
 ```bash
@@ -62,32 +85,38 @@ npm install
 
 3. Set up environment variables:
 ```bash
-cp .env.example .env
+cp .env.development .env
 ```
 
-4. Initialize the database:
+4. Start PostgreSQL database:
+```bash
+npm run docker:dev
+```
+
+5. Initialize the database:
 ```bash
 npm run db:generate
 npm run db:push
 ```
 
-5. (Optional) Seed sample data:
+6. (Optional) Seed sample data:
 ```bash
 npm run db:seed
 ```
 
-6. Start the development server:
+7. Start the development server:
 ```bash
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
-
 ## Environment Variables
 
 ```env
-# Database
-DATABASE_URL="file:./dev.db"
+# Database - PostgreSQL
+DATABASE_URL="postgresql://foodkeys:foodkeys_password@localhost:5432/foodkeys_db?schema=public"
+POSTGRES_USER="foodkeys"
+POSTGRES_PASSWORD="foodkeys_password"
+POSTGRES_DB="foodkeys_db"
 
 # Authentication
 TOTP_SECRET="your-32-char-secret"
@@ -195,8 +224,17 @@ curl -X POST http://localhost:3000/api/media \
 
 ```
 foodkeys-weblog-react/
+├── deploy/
+│   ├── Dockerfile          # Production build
+│   ├── Dockerfile.seed     # Database seeding
+│   ├── docker-compose.yml  # Main stack
+│   ├── docker-compose.dev.yml   # Development
+│   ├── docker-compose.prod.yml  # Production optimized
+│   ├── init-db/            # PostgreSQL init scripts
+│   └── README.md           # Deployment guide
 ├── prisma/
 │   ├── schema.prisma       # Database schema
+│   ├── migrations/         # Database migrations
 │   └── seed.ts             # Sample data
 ├── public/
 │   └── uploads/            # Uploaded media
@@ -225,7 +263,10 @@ foodkeys-weblog-react/
 │   │   └── utils.ts        # Helpers
 │   └── types/
 │       └── index.ts        # TypeScript types
+├── .dockerignore
 ├── .env.example
+├── .env.development
+├── .env.production.template
 ├── package.json
 └── README.md
 ```
@@ -233,33 +274,110 @@ foodkeys-weblog-react/
 ## Scripts
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run db:generate  # Generate Prisma client
-npm run db:push      # Push schema to database
-npm run db:studio    # Open Prisma Studio
-npm run db:seed      # Seed sample data
+# Development
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run start            # Start production server
+npm run lint             # Run ESLint
+
+# Database
+npm run db:generate      # Generate Prisma client
+npm run db:push          # Push schema to database
+npm run db:migrate       # Create migration (dev)
+npm run db:migrate:deploy # Deploy migrations (prod)
+npm run db:studio        # Open Prisma Studio
+npm run db:seed          # Seed sample data
+npm run db:reset         # Reset database
+
+# Docker - Development
+npm run docker:dev       # Start PostgreSQL for development
+npm run docker:dev:down  # Stop development database
+npm run docker:dev:logs  # View development database logs
+npm run docker:dev:pgadmin # Start pgAdmin UI
+
+# Docker - Production
+npm run docker:build     # Build production Docker image
+npm run docker:up        # Start production stack
+npm run docker:down      # Stop production stack
+npm run docker:logs      # View production logs
+npm run docker:migrate   # Run migrations in Docker
+npm run docker:seed      # Seed database in Docker
+npm run docker:prod      # Start optimized production stack
+npm run docker:prod:down # Stop optimized production stack
+
+# Quick Setup
+npm run setup            # Full setup (install, db, generate, seed)
 ```
+
+## Docker Deployment
+
+### Development with Docker (Database only)
+
+```bash
+# Start PostgreSQL
+npm run docker:dev
+
+# Optionally start pgAdmin UI (http://localhost:5050)
+npm run docker:dev:pgadmin
+
+# Run your Next.js app locally
+npm run dev
+```
+
+### Full Production Deployment
+
+```bash
+# Configure environment
+cp .env.production.template .env
+# Edit .env with your production values
+
+# Build and start
+npm run docker:build
+npm run docker:up
+
+# Run migrations
+npm run docker:migrate
+
+# (Optional) Seed data
+npm run docker:seed
+```
+
+See [deploy/README.md](deploy/README.md) for detailed deployment instructions.
 
 ## Deployment
 
-### Vercel (Recommended)
+### Docker (Recommended)
+
+See [deploy/README.md](deploy/README.md) for complete Docker deployment guide.
+
+```bash
+# Quick production deployment
+npm run docker:build
+npm run docker:up
+npm run docker:migrate
+```
+
+### Vercel
 
 1. Push to GitHub
 2. Import project in Vercel
-3. Set environment variables
-4. Deploy
+3. Add a PostgreSQL database (Vercel Postgres, Supabase, Neon, etc.)
+4. Set environment variables
+5. Deploy
 
 ### Self-Hosted
 
-1. Build the project:
+1. Set up a PostgreSQL database
+2. Configure environment variables
+3. Build the project:
 ```bash
 npm run build
 ```
-
-2. Start the server:
+4. Run migrations:
+```bash
+npm run db:migrate:deploy
+```
+5. Start the server:
 ```bash
 npm run start
 ```

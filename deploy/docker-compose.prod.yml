@@ -1,0 +1,121 @@
+# =============================================================================
+# FOODKEYS WEBLOG - PRODUCTION DOCKER COMPOSE
+# Enhanced configuration for production deployments with:
+# - Resource limits
+# - Health checks
+# - Logging configuration
+# - Security settings
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: foodkeys-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-foodkeys_db}
+      # Optimize for production
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=en_US.utf8 --lc-ctype=en_US.utf8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-foodkeys_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+    networks:
+      - foodkeys-network
+    # Security: Don't expose to host in production, only internal network
+    # Remove or comment the ports section for production behind reverse proxy
+    # ports:
+    #   - "${POSTGRES_PORT:-5432}:5432"
+
+  # ---------------------------------------------------------------------------
+  # Next.js Application
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: foodkeys-app
+    restart: always
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-foodkeys_db}?schema=public
+      API_KEY: ${API_KEY:?API_KEY is required for production}
+      TOTP_SECRET: ${TOTP_SECRET:?TOTP_SECRET is required for production}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL is required}
+      NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-FoodKeys Weblog}
+      NEXT_PUBLIC_SITE_DESCRIPTION: ${NEXT_PUBLIC_SITE_DESCRIPTION:-A modern news and articles platform}
+    volumes:
+      - uploads_data:/app/public/uploads
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+    networks:
+      - foodkeys-network
+    # Security settings
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  foodkeys-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "true"

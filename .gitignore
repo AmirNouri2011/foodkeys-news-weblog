@@ -26,6 +26,7 @@ yarn-error.log*
 # Local env files
 .env*.local
 .env
+.env.production
 
 # Vercel
 .vercel
@@ -41,3 +42,13 @@ prisma/*.db-journal
 # Uploads
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# Docker volumes data
+postgres_data/
+pgadmin_data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
