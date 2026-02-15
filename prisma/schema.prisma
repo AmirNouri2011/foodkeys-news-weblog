@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id            Int        @id @default(autoincrement())
+  title         String
+  slug          String     @unique
+  content       String     // HTML content
+  excerpt       String?    // Short description for previews
+  featuredImage String?    // Path to featured image
+  status        String     @default("DRAFT") // DRAFT | PUBLISHED | SCHEDULED | ARCHIVED
+  viewCount     Int        @default(0)
+  
+  // SEO fields
+  metaTitle       String?  // Custom meta title (falls back to title)
+  metaDescription String?  // Custom meta description (falls back to excerpt)
+  canonicalUrl    String?  // Custom canonical URL
+  
+  // Relations
+  categoryId    Int?
+  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags          PostTag[]
+  meta          PostMeta[]
+  media         Media[]
+  
+  // Timestamps
+  publishedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([categoryId])
+}
+
+model Category {
+  id          Int        @id @default(autoincrement())
+  name        String
+  slug        String     @unique
+  description String?
+  
+  // Hierarchical categories
+  parentId    Int?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryHierarchy")
+  
+  // SEO fields
+  metaTitle       String?
+  metaDescription String?
+  
+  posts       Post[]
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String
+  slug      String    @unique
+  
+  // SEO fields
+  metaTitle       String?
+  metaDescription String?
+  
+  posts     PostTag[]
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([slug])
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+  
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+}
+
+model PostMeta {
+  id     Int    @id @default(autoincrement())
+  postId Int
+  key    String
+  value  String
+  
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, key])
+  @@index([postId])
+  @@index([key])
+}
+
+model Media {
+  id        Int      @id @default(autoincrement())
+  filename  String   // Original filename
+  path      String   // Storage path relative to uploads folder
+  url       String   // Public URL
+  mimeType  String
+  size      Int      // File size in bytes
+  width     Int?     // Image width (if applicable)
+  height    Int?     // Image height (if applicable)
+  alt       String?  // Alt text for SEO
+  
+  postId    Int?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+}
+
+model Settings {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
