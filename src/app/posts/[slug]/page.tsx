@@ -76,6 +76,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     }
   }
 
+  //@ts-ignore
   return generatePostMetadata(post)
 }
 
@@ -92,6 +93,7 @@ export default async function PostPage({ params }: PostPageProps) {
   const readingTime = getReadingTime(post.content)
 
   // SEO structured data
+  //@ts-ignore
   const articleJsonLd = generateArticleJsonLd(post)
   const breadcrumbs = [
     { name: 'Home', url: '/' },
