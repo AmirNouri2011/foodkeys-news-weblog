@@ -5,6 +5,8 @@ import prisma from '@/lib/prisma'
 import { Badge } from '@/components/ui/badge'
 import { FadeUp, StaggerContainer, StaggerItem } from '@/components/animations/motion-wrapper'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Tags',
   description: 'Browse all article tags on FoodKeys Weblog.',

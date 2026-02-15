@@ -35,7 +35,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client only (no migrations)
 RUN npx prisma generate
 
 # Build Next.js application
@@ -49,7 +49,7 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Install OpenSSL for Prisma
+# OpenSSL required for Prisma at runtime
 RUN apk add --no-cache openssl
 
 # Set environment
@@ -70,7 +70,7 @@ RUN mkdir -p ./public/uploads && chown -R nextjs:nodejs ./public/uploads
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma files for migrations
+# Copy Prisma (client only; migrations are not run in container)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
@@ -79,13 +79,13 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 USER nextjs
 
 # Expose port
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 3300
+ENV PORT=3300
 ENV HOSTNAME="0.0.0.0"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3300/ || exit 1
 
 # Start the application
 CMD ["node", "server.js"]

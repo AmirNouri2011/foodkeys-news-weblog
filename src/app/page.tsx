@@ -9,6 +9,8 @@ import { HeroSection } from '@/components/home/hero-section'
 import { CategoriesSection } from '@/components/home/categories-section'
 import { WebsiteJsonLd, OrganizationJsonLd } from '@/components/seo/json-ld'
 
+export const dynamic = 'force-dynamic'
+
 async function getFeaturedPosts() {
   return prisma.post.findMany({
     where: { 

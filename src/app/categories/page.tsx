@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma'
 import { CategoriesGrid } from '@/components/home/categories-section'
 import { FadeUp } from '@/components/animations/motion-wrapper'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Categories',
   description: 'Browse all article categories on FoodKeys Weblog.',

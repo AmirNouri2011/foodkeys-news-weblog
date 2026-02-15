@@ -41,7 +41,7 @@ export function generatePostMetadata(post: PostWithRelations): Metadata {
   return {
     title,
     description,
-    keywords: [...new Set(keywords)],
+    keywords: Array.from(new Set(keywords)),
     alternates: {
       canonical,
     },
