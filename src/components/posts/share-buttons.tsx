@@ -55,7 +55,7 @@ export function ShareButtons({ url, title }: ShareButtonsProps) {
           href={link.href}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`Share on ${link.name}`}
+          aria-label={`اشتراک در ${link.name}`}
         >
           <Button variant="ghost" size="icon" className={link.color}>
             <link.icon className="h-4 w-4" />
@@ -68,7 +68,7 @@ export function ShareButtons({ url, title }: ShareButtonsProps) {
         size="icon"
         onClick={copyToClipboard}
         className="relative"
-        aria-label="Copy link"
+        aria-label="کپی لینک"
       >
         <AnimatePresence mode="wait">
           {copied ? (

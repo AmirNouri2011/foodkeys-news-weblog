@@ -75,7 +75,7 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
   const tag = await getTag(slug)
 
   if (!tag) {
-    return { title: 'Tag Not Found' }
+    return { title: 'برچسب یافت نشد' }
   }
 
   return generateTagMetadata(tag)
@@ -95,8 +95,8 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   const { posts, pagination } = await getTagPosts(tag.id, page)
 
   const breadcrumbs = [
-    { name: 'Home', url: '/' },
-    { name: 'Tags', url: '/tags' },
+    { name: 'خانه', url: '/' },
+    { name: 'برچسب‌ها', url: '/tags' },
     { name: tag.name, url: `/tag/${tag.slug}` },
   ]
 
@@ -110,7 +110,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
           <Link href="/tags" className="inline-block mb-6">
             <Button variant="ghost" size="sm" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              All Tags
+              همه برچسب‌ها
             </Button>
           </Link>
         </FadeUp>
@@ -125,7 +125,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold">#{tag.name}</h1>
                 <p className="text-muted-foreground">
-                  {pagination.total} article{pagination.total !== 1 ? 's' : ''} tagged
+                  {pagination.total} نوشته با این برچسب
                 </p>
               </div>
             </div>
@@ -158,7 +158,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
           </>
         ) : (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">No articles with this tag yet.</p>
+            <p className="text-muted-foreground">هنوز نوشته‌ای با این برچسب نیست.</p>
           </div>
         )}
       </div>

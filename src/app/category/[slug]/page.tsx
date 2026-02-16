@@ -74,7 +74,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const category = await getCategory(slug)
 
   if (!category) {
-    return { title: 'Category Not Found' }
+    return { title: 'دسته یافت نشد' }
   }
 
   return generateCategoryMetadata(category)
@@ -94,8 +94,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const { posts, pagination } = await getCategoryPosts(category.id, page)
 
   const breadcrumbs = [
-    { name: 'Home', url: '/' },
-    { name: 'Categories', url: '/categories' },
+    { name: 'خانه', url: '/' },
+    { name: 'دسته‌ها', url: '/categories' },
     ...(category.parent ? [{ name: category.parent.name, url: `/category/${category.parent.slug}` }] : []),
     { name: category.name, url: `/category/${category.slug}` },
   ]
@@ -110,7 +110,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           <Link href="/categories" className="inline-block mb-6">
             <Button variant="ghost" size="sm" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              All Categories
+              همه دسته‌ها
             </Button>
           </Link>
         </FadeUp>
@@ -125,7 +125,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold">{category.name}</h1>
                 <p className="text-muted-foreground">
-                  {pagination.total} article{pagination.total !== 1 ? 's' : ''}
+                  {pagination.total} نوشته
                 </p>
               </div>
             </div>
@@ -139,7 +139,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             {/* Subcategories */}
             {category.children.length > 0 && (
               <div className="mt-6 flex flex-wrap gap-2">
-                <span className="text-sm text-muted-foreground mr-2">Subcategories:</span>
+                <span className="text-sm text-muted-foreground ml-2">زیردسته‌ها:</span>
                 {category.children.map((child) => (
                   <Link key={child.id} href={`/category/${child.slug}`}>
                     <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground">
@@ -178,7 +178,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           </>
         ) : (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">No articles in this category yet.</p>
+            <p className="text-muted-foreground">هنوز نوشته‌ای در این دسته نیست.</p>
           </div>
         )}
       </div>

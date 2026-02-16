@@ -24,9 +24,9 @@ export default function NotFound() {
           404
         </motion.div>
 
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">Page Not Found</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-4">صفحه یافت نشد</h1>
         <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
-          Sorry, the page you&apos;re looking for doesn&apos;t exist or has been moved.
+          متأسفانه این صفحه وجود ندارد یا منتقل شده است.
         </p>
 
         {/* Action Buttons */}
@@ -34,13 +34,13 @@ export default function NotFound() {
           <Link href="/">
             <Button variant="gradient" size="lg" className="gap-2">
               <Home className="h-4 w-4" />
-              Go Home
+              صفحه اصلی
             </Button>
           </Link>
           <Link href="/search">
             <Button variant="outline" size="lg" className="gap-2">
               <Search className="h-4 w-4" />
-              Search Articles
+              جستجو
             </Button>
           </Link>
         </div>
@@ -56,8 +56,8 @@ export default function NotFound() {
             onClick={() => window.history.back()}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Go back to previous page
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+            بازگشت به صفحه قبل
           </button>
         </motion.div>
       </motion.div>
