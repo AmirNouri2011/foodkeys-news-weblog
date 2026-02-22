@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Tag, ArrowLeft } from 'lucide-react'
 import prisma from '@/lib/prisma'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { PostGrid } from '@/components/posts/post-grid'
 import { FadeUp } from '@/components/animations/motion-wrapper'
 import { BreadcrumbJsonLd } from '@/components/seo/json-ld'
+import { Pagination } from '@/components/ui/pagination'
 
 interface TagPageProps {
   params: Promise<{ slug: string }>
@@ -25,47 +26,41 @@ async function getTag(slug: string) {
 
 async function getTagPosts(tagId: number, page: number = 1) {
   const limit = 12
-  const skip = (page - 1) * limit
+  const where = {
+    tagId,
+    post: {
+      status: 'PUBLISHED' as const,
+      publishedAt: { not: null },
+    },
+  }
 
-  const [postTags, total] = await Promise.all([
-    prisma.postTag.findMany({
-      where: {
-        tagId,
-        post: {
-          status: 'PUBLISHED',
-          publishedAt: { not: null },
+  const total = await prisma.postTag.count({ where })
+  const totalPages = Math.ceil(total / limit)
+  const safePage = totalPages > 0 ? Math.min(Math.max(1, page), totalPages) : 1
+  const skip = (safePage - 1) * limit
+
+  const postTags = await prisma.postTag.findMany({
+    where,
+    skip,
+    take: limit,
+    orderBy: [{ post: { publishedAt: 'desc' } }, { post: { id: 'desc' } }],
+    include: {
+      post: {
+        include: {
+          category: true,
+          tags: { include: { tag: true } },
         },
       },
-      skip,
-      take: limit,
-      orderBy: { post: { publishedAt: 'desc' } },
-      include: {
-        post: {
-          include: {
-            category: true,
-            tags: { include: { tag: true } },
-          },
-        },
-      },
-    }),
-    prisma.postTag.count({
-      where: {
-        tagId,
-        post: {
-          status: 'PUBLISHED',
-          publishedAt: { not: null },
-        },
-      },
-    }),
-  ])
+    },
+  })
 
   return {
     posts: postTags.map((pt) => pt.post),
     pagination: {
-      page,
+      page: safePage,
       limit,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages,
     },
   }
 }
@@ -84,7 +79,8 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
 export default async function TagPage({ params, searchParams }: TagPageProps) {
   const { slug } = await params
   const { page: pageParam } = await searchParams
-  const page = parseInt(pageParam || '1')
+  const rawPage = parseInt(pageParam || '1', 10)
+  const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage
   
   const tag = await getTag(slug)
 
@@ -93,6 +89,12 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   }
 
   const { posts, pagination } = await getTagPosts(tag.id, page)
+  const getPageHref = (targetPage: number) => `/tag/${slug}?page=${targetPage}`
+
+  // If requested page is out of range, redirect to the last valid page
+  if (pagination.totalPages > 0 && page !== pagination.page) {
+    return redirect(getPageHref(pagination.page))
+  }
 
   const breadcrumbs = [
     { name: 'خانه', url: '/' },
@@ -139,21 +141,11 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
             
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-12">
-                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
-                  <Link
-                    key={p}
-                    href={`/tag/${slug}?page=${p}`}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      p === pagination.page
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted hover:bg-accent'
-                    }`}
-                  >
-                    {p}
-                  </Link>
-                ))}
-              </div>
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                getPageHref={getPageHref}
+              />
             )}
           </>
         ) : (

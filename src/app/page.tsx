@@ -66,13 +66,36 @@ async function getPopularPosts() {
 	});
 }
 
+async function getHeroStats() {
+	const where = {
+		status: "PUBLISHED" as const,
+		publishedAt: { not: null },
+	};
+
+	const [postsCount, categoriesCount, viewsAggregate] = await Promise.all([
+		prisma.post.count({ where }),
+		prisma.category.count(),
+		prisma.post.aggregate({
+			_sum: { viewCount: true },
+			where,
+		}),
+	]);
+
+	return {
+		posts: postsCount,
+		categories: categoriesCount,
+		readers: viewsAggregate._sum.viewCount ?? 0,
+	};
+}
+
 export default async function HomePage() {
-	const [featuredPosts, latestPosts, categories, popularPosts] =
+	const [featuredPosts, latestPosts, categories, popularPosts, heroStats] =
 		await Promise.all([
 			getFeaturedPosts(),
 			getLatestPosts(),
 			getCategories(),
 			getPopularPosts(),
+			getHeroStats(),
 		]);
 
 	return (
@@ -81,7 +104,7 @@ export default async function HomePage() {
 			<OrganizationJsonLd />
 
 			{/* Hero Section */}
-			<HeroSection />
+			<HeroSection stats={heroStats} />
 
 			{/* Main Content */}
 			<div className="container-wrapper py-12 lg:py-16">

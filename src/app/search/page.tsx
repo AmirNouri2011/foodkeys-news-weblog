@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { PostGrid, PostGridSkeleton } from "@/components/posts/post-grid";
 import { SearchForm } from "@/components/search/search-form";
 import { FadeUp } from "@/components/animations/motion-wrapper";
+import { Pagination } from "@/components/ui/pagination";
 
 export const metadata: Metadata = {
 	title: "جستجو",
@@ -24,7 +25,6 @@ async function searchPosts(query: string, page: number = 1) {
 	}
 
 	const limit = 12;
-	const skip = (page - 1) * limit;
 
 	const where = {
 		status: "PUBLISHED" as const,
@@ -38,33 +38,38 @@ async function searchPosts(query: string, page: number = 1) {
 		],
 	};
 
-	const [posts, total] = await Promise.all([
-		prisma.post.findMany({
-			where,
-			skip,
-			take: limit,
-			orderBy: { publishedAt: "desc" },
-			include: {
-				category: true,
-				tags: { include: { tag: true } },
-			},
-		}),
-		prisma.post.count({ where }),
-	]);
+	const total = await prisma.post.count({ where });
+	const totalPages = Math.ceil(total / limit);
+	const safePage =
+		totalPages > 0 ? Math.min(Math.max(1, page), totalPages) : 1;
+	const skip = (safePage - 1) * limit;
+
+	const posts = await prisma.post.findMany({
+		where,
+		skip,
+		take: limit,
+		orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+		include: {
+			category: true,
+			tags: { include: { tag: true } },
+		},
+	});
 
 	return {
 		posts,
 		pagination: {
-			page,
+			page: safePage,
 			limit,
 			total,
-			totalPages: Math.ceil(total / limit),
+			totalPages,
 		},
 	};
 }
 
 async function SearchResults({ query, page }: { query: string; page: number }) {
 	const { posts, pagination } = await searchPosts(query, page);
+	const getPageHref = (targetPage: number) =>
+		`/search?q=${encodeURIComponent(query)}&page=${targetPage}`;
 
 	if (!query.trim()) {
 		return (
@@ -97,23 +102,11 @@ async function SearchResults({ query, page }: { query: string; page: number }) {
 
 			{/* Pagination */}
 			{pagination.totalPages > 1 && (
-				<div className="flex justify-center gap-2 mt-12">
-					{Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
-						(p) => (
-							<a
-								key={p}
-								href={`/search?q=${encodeURIComponent(query)}&page=${p}`}
-								className={`px-4 py-2 rounded-lg transition-colors ${
-									p === pagination.page
-										? "bg-primary text-primary-foreground"
-										: "bg-muted hover:bg-accent"
-								}`}
-							>
-								{p}
-							</a>
-						),
-					)}
-				</div>
+				<Pagination
+					currentPage={pagination.page}
+					totalPages={pagination.totalPages}
+					getPageHref={getPageHref}
+				/>
 			)}
 		</>
 	);
@@ -122,7 +115,8 @@ async function SearchResults({ query, page }: { query: string; page: number }) {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
 	const params = await searchParams;
 	const query = params.q || "";
-	const page = parseInt(params.page || "1");
+	const rawPage = parseInt(params.page || "1", 10);
+	const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
 
 	return (
 		<div className="container-wrapper py-12">
