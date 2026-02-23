@@ -125,7 +125,7 @@ export default async function NewsDetailsPage({
 		{ name: "خانه", url: "/" },
 		{ name: "اخبار و مقالات", url: "/posts" },
 		...(post.category
-			? [{ name: post.category.name, url: `/category/${post.category.slug}` }]
+			? [{ name: post.category.name, url: `/category/${encodeURIComponent(post.category.slug)}` }]
 			: []),
 		{ name: post.title, url: detailsUrl },
 	];
@@ -183,7 +183,7 @@ export default async function NewsDetailsPage({
 								<div className="flex items-center gap-2 flex-wrap">
 									<Tag className="h-4 w-4 text-muted-foreground" />
 									{post.tags.map((pt) => (
-										<Link key={pt.tag.id} href={`/tag/${pt.tag.slug}`}>
+										<Link key={pt.tag.id} href={`/tag/${encodeURIComponent(pt.tag.slug)}`}>
 											<Badge
 												variant="secondary"
 												className="hover:bg-primary hover:text-primary-foreground transition-colors"
@@ -245,7 +245,7 @@ function PostHeader({ post, readingTime, light }: PostHeaderProps) {
 	return (
 		<div className={`max-w-3xl ${light ? "" : "mx-auto"}`}>
 			{post.category && (
-				<Link href={`/category/${post.category.slug}`}>
+				<Link href={`/category/${encodeURIComponent(post.category.slug)}`}>
 					<Badge
 						className={`mb-4 ${light ? "bg-white/20 text-white hover:bg-white/30" : ""}`}
 						variant={light ? "default" : "secondary"}

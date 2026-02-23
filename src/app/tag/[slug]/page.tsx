@@ -16,8 +16,18 @@ interface TagPageProps {
 }
 
 async function getTag(slug: string) {
-  return prisma.tag.findUnique({
-    where: { slug },
+  const decodedSlug = decodeURIComponent(slug)
+  const tag = await prisma.tag.findUnique({
+    where: { slug: decodedSlug },
+    include: {
+      _count: { select: { posts: true } },
+    },
+  })
+  if (tag) return tag
+
+  const nameFromSlug = decodedSlug.replace(/-/g, ' ')
+  return prisma.tag.findFirst({
+    where: { name: nameFromSlug },
     include: {
       _count: { select: { posts: true } },
     },
@@ -89,11 +99,18 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   }
 
   const { posts, pagination } = await getTagPosts(tag.id, page)
-  const getPageHref = (targetPage: number) => `/tag/${slug}?page=${targetPage}`
+  const getPageHref = (targetPage: number) => `/tag/${encodeURIComponent(tag.slug)}?page=${targetPage}`
 
   // If requested page is out of range, redirect to the last valid page
   if (pagination.totalPages > 0 && page !== pagination.page) {
     return redirect(getPageHref(pagination.page))
+  }
+
+  // If slug from URL differs from DB (e.g. name-based fallback), redirect to canonical
+  const decodedSlug = decodeURIComponent(slug)
+  if (decodedSlug !== tag.slug) {
+    const q = pagination.page > 1 ? `?page=${pagination.page}` : ''
+    redirect(`/tag/${encodeURIComponent(tag.slug)}${q}`)
   }
 
   const breadcrumbs = [

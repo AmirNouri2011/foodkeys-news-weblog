@@ -1,8 +1,10 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Tag } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import {
 	FadeUp,
 	StaggerContainer,
@@ -16,20 +18,51 @@ export const metadata: Metadata = {
 	description: "مرور برچسب‌های اخبار و مقالاتی نشریه فودکیز.",
 };
 
-async function getTags() {
-	return prisma.tag.findMany({
-		include: {
-			_count: { select: { posts: true } },
-		},
-		orderBy: { posts: { _count: "desc" } },
-	});
+const TAGS_PER_PAGE = 60;
+
+async function getTags(page: number = 1) {
+	const total = await prisma.tag.count();
+	const totalPages = Math.ceil(total / TAGS_PER_PAGE) || 1;
+	const safePage = Math.min(Math.max(1, page), totalPages);
+	const skip = (safePage - 1) * TAGS_PER_PAGE;
+
+	const [topTag, tags] = await Promise.all([
+		prisma.tag.findFirst({
+			orderBy: { posts: { _count: "desc" } },
+			include: { _count: { select: { posts: true } } },
+		}),
+		prisma.tag.findMany({
+			skip,
+			take: TAGS_PER_PAGE,
+			include: { _count: { select: { posts: true } } },
+			orderBy: { posts: { _count: "desc" } },
+		}),
+	]);
+
+	const maxCount = topTag?._count.posts ?? 1;
+
+	return {
+		tags,
+		maxCount,
+		pagination: { page: safePage, total, totalPages },
+	};
 }
 
-export default async function TagsPage() {
-	const tags = await getTags();
+interface TagsPageProps {
+	searchParams: Promise<{ page?: string }>;
+}
 
-	// Calculate tag sizes for tag cloud effect
-	const maxCount = Math.max(...tags.map((t) => t._count.posts), 1);
+export default async function TagsPage({ searchParams }: TagsPageProps) {
+	const params = await searchParams;
+	const rawPage = parseInt(params.page || "1", 10);
+	const page = Number.isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
+	const { tags, pagination, maxCount } = await getTags(page);
+
+	if (pagination.totalPages > 0 && page !== pagination.page) {
+		redirect(`/tags?page=${pagination.page}`);
+	}
+
+	// Tag cloud sizes use global max so sizes stay consistent across pages
 	const getTagSize = (count: number) => {
 		const ratio = count / maxCount;
 		if (ratio > 0.8) return "text-2xl";
@@ -57,23 +90,32 @@ export default async function TagsPage() {
 			</FadeUp>
 
 			{tags.length > 0 ? (
-				<StaggerContainer className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
-					{tags.map((tag) => (
-						<StaggerItem key={tag.id}>
-							<Link href={`/tag/${tag.slug}`}>
-								<Badge
-									variant="outline"
-									className={`${getTagSize(tag._count.posts)} px-4 py-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all cursor-pointer`}
-								>
-									#{tag.name}
-									<span className="mr-2 text-xs opacity-70">
-										({tag._count.posts})
-									</span>
-								</Badge>
-							</Link>
-						</StaggerItem>
-					))}
-				</StaggerContainer>
+				<>
+					<StaggerContainer className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
+						{tags.map((tag) => (
+							<StaggerItem key={tag.id}>
+								<Link href={`/tag/${encodeURIComponent(tag.slug)}`}>
+									<Badge
+										variant="outline"
+										className={`${getTagSize(tag._count.posts)} px-4 py-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all cursor-pointer`}
+									>
+										#{tag.name}
+										<span className="mr-2 text-xs opacity-70">
+											({tag._count.posts})
+										</span>
+									</Badge>
+								</Link>
+							</StaggerItem>
+						))}
+					</StaggerContainer>
+					{pagination.totalPages > 1 && (
+						<Pagination
+							currentPage={pagination.page}
+							totalPages={pagination.totalPages}
+							getPageHref={(p) => `/tags?page=${p}`}
+						/>
+					)}
+				</>
 			) : (
 				<div className="text-center py-20">
 					<p className="text-muted-foreground">برچسبی یافت نشد.</p>

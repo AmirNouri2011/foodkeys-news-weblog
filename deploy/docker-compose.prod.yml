@@ -12,12 +12,12 @@ services:
   # Next.js Application
   # ---------------------------------------------------------------------------
   app:
-    image: next-weblog:v0.2
+    image: next-weblog:v0.4
     container_name: foodkeys-weblog
     restart: always
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:gZspMkBe8z@10.10.10.110:65432/fk?schema=news
+      DATABASE_URL: postgresql://postgres:gZspMkBe8z@postgres:5432/fk?schema=news
       API_KEY: 9b2c69f62faa8890d2815968586d6c7473c244aad095243b38b6a41e2da0f9a4
       TOTP_SECRET: JJBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP
       NEXT_PUBLIC_SITE_URL: https://news.agfo.ir
@@ -70,6 +70,4 @@ volumes:
 # =============================================================================
 networks:
   foodkeys-network:
-    driver: bridge
-    driver_opts:
-      com.docker.network.bridge.enable_icc: "true"
+    external: true

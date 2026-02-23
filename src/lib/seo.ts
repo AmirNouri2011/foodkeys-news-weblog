@@ -109,7 +109,7 @@ export function generateCategoryMetadata(
 		category.metaDescription ||
 		category.description ||
 		`Browse all articles in ${category.name}`;
-	const canonical = absoluteUrl(`/category/${category.slug}`);
+	const canonical = absoluteUrl(`/category/${encodeURIComponent(category.slug)}`);
 
 	return {
 		title,
@@ -139,7 +139,7 @@ export function generateTagMetadata(tag: TagWithCount): Metadata {
 	const title = tag.metaTitle || `${tag.name} - برچسب‌ها`;
 	const description =
 		tag.metaDescription || `Browse all articles tagged with ${tag.name}`;
-	const canonical = absoluteUrl(`/tag/${tag.slug}`);
+	const canonical = absoluteUrl(`/tag/${encodeURIComponent(tag.slug)}`);
 
 	return {
 		title,

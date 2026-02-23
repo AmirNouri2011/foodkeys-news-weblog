@@ -36,7 +36,7 @@ export function CategoriesSection({ categories }: CategoriesSectionProps) {
 						animate={{ opacity: 1, x: 0 }}
 						transition={{ delay: index * 0.05 }}
 					>
-						<Link href={`/category/${category.slug}`}>
+						<Link href={`/category/${encodeURIComponent(category.slug)}`}>
 							<div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors group">
 								<span className="font-medium group-hover:text-primary transition-colors">
 									{category.name}
@@ -89,7 +89,7 @@ export function CategoriesGrid({ categories }: CategoriesGridProps) {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: index * 0.1 }}
 				>
-					<Link href={`/category/${category.slug}`}>
+					<Link href={`/category/${encodeURIComponent(category.slug)}`}>
 						<motion.div
 							whileHover={{ y: -5, scale: 1.02 }}
 							transition={{ type: "spring", stiffness: 300, damping: 20 }}

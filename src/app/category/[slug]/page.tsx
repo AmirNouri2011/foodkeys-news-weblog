@@ -17,8 +17,24 @@ interface CategoryPageProps {
 }
 
 async function getCategory(slug: string) {
-  return prisma.category.findUnique({
-    where: { slug },
+  const decodedSlug = decodeURIComponent(slug)
+  const category = await prisma.category.findUnique({
+    where: { slug: decodedSlug },
+    include: {
+      parent: true,
+      children: {
+        include: {
+          _count: { select: { posts: true } },
+        },
+      },
+      _count: { select: { posts: true } },
+    },
+  })
+  if (category) return category
+
+  const nameFromSlug = decodedSlug.replace(/-/g, ' ').replace(/%20/g, ' ')
+  return prisma.category.findFirst({
+    where: { name: nameFromSlug },
     include: {
       parent: true,
       children: {
@@ -90,7 +106,13 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   }
 
   const { posts, pagination } = await getCategoryPosts(category.id, page)
-  const getPageHref = (targetPage: number) => `/category/${slug}?page=${targetPage}`
+  const getPageHref = (targetPage: number) => `/category/${encodeURIComponent(category.slug)}?page=${targetPage}`
+
+  const decodedSlug = decodeURIComponent(slug)
+  if (decodedSlug !== category.slug) {
+    const q = pagination.page > 1 ? `?page=${pagination.page}` : ''
+    return redirect(`/category/${encodeURIComponent(category.slug)}${q}`)
+  }
 
   // If requested page is out of range, redirect to the last valid page
   if (pagination.totalPages > 0 && page !== pagination.page) {
@@ -100,8 +122,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const breadcrumbs = [
     { name: 'خانه', url: '/' },
     { name: 'دسته‌ها', url: '/categories' },
-    ...(category.parent ? [{ name: category.parent.name, url: `/category/${category.parent.slug}` }] : []),
-    { name: category.name, url: `/category/${category.slug}` },
+    ...(category.parent ? [{ name: category.parent.name, url: `/category/${encodeURIComponent(category.parent.slug)}` }] : []),
+    { name: category.name, url: `/category/${encodeURIComponent(category.slug)}` },
   ]
 
   return (
@@ -145,7 +167,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
               <div className="mt-6 flex flex-wrap gap-2">
                 <span className="text-sm text-muted-foreground ml-2">زیردسته‌ها:</span>
                 {category.children.map((child) => (
-                  <Link key={child.id} href={`/category/${child.slug}`}>
+                  <Link key={child.id} href={`/category/${encodeURIComponent(child.slug)}`}>
                     <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground">
                       {child.name} ({child._count.posts})
                     </Badge>
